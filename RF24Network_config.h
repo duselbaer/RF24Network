@@ -10,6 +10,11 @@
 #ifndef __RF24_CONFIG_H__
 #define __RF24_CONFIG_H__
 
+#ifdef __MSP430__
+/* Put all the MSP430 specific stuff in here */
+#define PSTR
+#define IF_SERIAL_DEBUG(x)
+#else
 #if ARDUINO < 100
 #include <WProgram.h>
 #else
@@ -56,6 +61,7 @@ typedef uint16_t prog_uint16_t;
 #define pgm_read_word(p) (*(p)) 
 #define PRIPSTR "%s"
 #endif
+#endif // MSP430
 
 #endif // __RF24_CONFIG_H__
 // vim:ai:cin:sts=2 sw=2 ft=cpp

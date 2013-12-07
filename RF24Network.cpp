@@ -7,13 +7,24 @@
  */
 
 #include "RF24Network_config.h"
-#include "RF24.h"
 #include "RF24Network.h"
+#include <RF24.h>
+
+#include <string.h>
 
 uint16_t RF24NetworkHeader::next_id = 1;
 
 uint64_t pipe_address( uint16_t node, uint8_t pipe );
 bool is_valid_address( uint16_t node );
+
+/*
+ * Definition of the min function
+ */
+template<typename T>
+const T& min(const T& a, const T& b)
+{
+  return a < b ? a : b;
+}
 
 /******************************************************************/
 
@@ -60,7 +71,7 @@ void RF24Network::update(void)
   while ( radio.isValid() && radio.available(&pipe_num) )
   {
     // Dump the payloads until we've gotten everything
-    boolean done = false;
+    bool done = false;
     while (!done)
     {
       // Fetch the payload, and see if this was the last one.
@@ -307,9 +318,13 @@ bool RF24Network::write_to_pipe( uint16_t node, uint8_t pipe )
 
 const char* RF24NetworkHeader::toString(void) const
 {
+#ifdef __MSP430__
+  return nullptr;
+#else
   static char buffer[45];
   snprintf_P(buffer,sizeof(buffer),PSTR("id %04x from 0%o to 0%o type %c"),id,from_node,to_node,type);
   return buffer;
+#endif
 }
 
 /******************************************************************/
@@ -412,7 +427,9 @@ bool is_valid_address( uint16_t node )
     if (digit < 1 || digit > 5)
     {
       result = false;
+#ifndef __MSP430__
       printf_P(PSTR("*** WARNING *** Invalid address 0%o\n\r"),node);
+#endif
       break;
     }
     node >>= 3;

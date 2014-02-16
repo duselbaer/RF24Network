@@ -78,6 +78,7 @@ struct RF24NetworkHeader
  * by RF24 library.
  */
 
+template<typename RF24>
 class RF24Network
 {
 public:
@@ -98,7 +99,7 @@ public:
    * @param _node_address The logical address of this node
    */
   void begin(uint8_t _channel, uint16_t _node_address );
-  
+
   /**
    * Main layer loop
    *
@@ -113,7 +114,7 @@ public:
    * @return Whether there is a message available for this node
    */
   bool available(void);
- 
+
   /**
    * Read the next available header
    *
@@ -135,7 +136,7 @@ public:
    * @return The total number of bytes copied into @p message
    */
   size_t read(RF24NetworkHeader& header, void* message, size_t maxlen);
-  
+
   /**
    * Send a message
    *
@@ -154,7 +155,7 @@ public:
    * @return This node's parent address, or -1 if this is the base 
    */
   uint16_t parent() const;
- 
+
 protected:
   void open_pipes(void);
   uint16_t find_node( uint16_t current_node, uint16_t target_node );

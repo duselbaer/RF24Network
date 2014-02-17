@@ -18,12 +18,11 @@
 #include <RF24Network_config.h>
 // Project headers
 
-class RF24Network;
-
 /**
  * Synchronizes a shared set of variables between multiple nodes
  */
 
+template<typename RF24Network>
 class Sync
 {
 private:

@@ -7,8 +7,6 @@
  */
 
 #include "RF24Network_config.h"
-#include "RF24Network.h"
-#include <RF24.h>
 
 #include <string.h>
 
@@ -28,13 +26,15 @@ const T& min(const T& a, const T& b)
 
 /******************************************************************/
 
-RF24Network::RF24Network( RF24& _radio ): radio(_radio), next_frame(frame_queue)
+template<typename RF24>
+RF24Network<RF24>::RF24Network( RF24& _radio ): radio(_radio), next_frame(frame_queue)
 {
 }
 
 /******************************************************************/
 
-void RF24Network::begin(uint8_t _channel, uint16_t _node_address )
+template<typename RF24>
+void RF24Network<RF24>::begin(uint8_t _channel, uint16_t _node_address )
 {
   if (! is_valid_address(_node_address) )
     return;
@@ -46,12 +46,12 @@ void RF24Network::begin(uint8_t _channel, uint16_t _node_address )
 
   // Set up the radio the way we want it to look
   radio.setChannel(_channel);
-  radio.setDataRate(RF24_1MBPS);
-  radio.setCRCLength(RF24_CRC_16);
+  radio.setDataRate(RF24::RF24_SPEED_1MBPS);
+  radio.setCRCLength(RF24::RF24_CRC_2BYTE);
 
   // Setup our address helper cache
   setup_address();
-  
+
   // Open up all listening pipes
   int i = 6;
   while (i--)
@@ -59,12 +59,13 @@ void RF24Network::begin(uint8_t _channel, uint16_t _node_address )
   radio.startListening();
 
   // Spew debugging state about the radio
-  radio.printDetails();
+  // radio.printDetails();
 }
 
 /******************************************************************/
 
-void RF24Network::update(void)
+template<typename RF24>
+void RF24Network<RF24>::update(void)
 {
   // if there is data ready
   uint8_t pipe_num;
@@ -116,7 +117,8 @@ void RF24Network::update(void)
 
 /******************************************************************/
 
-bool RF24Network::enqueue(void)
+template<typename RF24>
+bool RF24Network<RF24>::enqueue(void)
 {
   bool result = false;
   
@@ -141,7 +143,8 @@ bool RF24Network::enqueue(void)
 
 /******************************************************************/
 
-bool RF24Network::available(void)
+template<typename RF24>
+bool RF24Network<RF24>::available(void)
 {
   // Are there frames on the queue for us?
   return (next_frame > frame_queue);
@@ -149,7 +152,8 @@ bool RF24Network::available(void)
 
 /******************************************************************/
 
-uint16_t RF24Network::parent() const
+template<typename RF24>
+uint16_t RF24Network<RF24>::parent() const
 {
   if ( node_address == 0 )
     return -1;
@@ -159,7 +163,8 @@ uint16_t RF24Network::parent() const
 
 /******************************************************************/
 
-void RF24Network::peek(RF24NetworkHeader& header)
+template<typename RF24>
+void RF24Network<RF24>::peek(RF24NetworkHeader& header)
 {
   if ( available() )
   {
@@ -170,7 +175,8 @@ void RF24Network::peek(RF24NetworkHeader& header)
 
 /******************************************************************/
 
-size_t RF24Network::read(RF24NetworkHeader& header,void* message, size_t maxlen)
+template<typename RF24>
+size_t RF24Network<RF24>::read(RF24NetworkHeader& header,void* message, size_t maxlen)
 {
   size_t bufsize = 0;
 
@@ -199,7 +205,8 @@ size_t RF24Network::read(RF24NetworkHeader& header,void* message, size_t maxlen)
 
 /******************************************************************/
 
-bool RF24Network::write(RF24NetworkHeader& header,const void* message, size_t len)
+template<typename RF24>
+bool RF24Network<RF24>::write(RF24NetworkHeader& header,const void* message, size_t len)
 {
   // Fill out the header
   header.from_node = node_address;
@@ -227,10 +234,11 @@ bool RF24Network::write(RF24NetworkHeader& header,const void* message, size_t le
 
 /******************************************************************/
 
-bool RF24Network::write(uint16_t to_node)
+template<typename RF24>
+bool RF24Network<RF24>::write(uint16_t to_node)
 {
   bool ok = false;
-  
+
   // Throw it away if it's not a valid address
   if ( !is_valid_address(to_node) )
     return false;
@@ -242,7 +250,7 @@ bool RF24Network::write(uint16_t to_node)
   uint16_t send_node = parent_node;
   // On which pipe
   uint8_t send_pipe = parent_pipe;
-  
+
   // If the node is a direct child,
   if ( is_direct_child(to_node) )
   {
@@ -260,7 +268,7 @@ bool RF24Network::write(uint16_t to_node)
     send_node = direct_child_route_to(to_node);
     send_pipe = 0;
   }
-  
+
   IF_SERIAL_DEBUG(printf_P(PSTR("%lu: MAC Sending to 0%o via 0%o on pipe %x\n\r"),millis(),to_node,send_node,send_pipe));
 
   // First, stop listening so we can talk
@@ -292,12 +300,13 @@ bool RF24Network::write(uint16_t to_node)
 
 /******************************************************************/
 
-bool RF24Network::write_to_pipe( uint16_t node, uint8_t pipe )
+template<typename RF24>
+bool RF24Network<RF24>::write_to_pipe( uint16_t node, uint8_t pipe )
 {
   bool ok = false;
-  
+
   uint64_t out_pipe = pipe_address( node, pipe );
- 
+
   // Open the correct pipe for writing.  
   radio.openWritingPipe(out_pipe);
 
@@ -329,7 +338,8 @@ const char* RF24NetworkHeader::toString(void) const
 
 /******************************************************************/
 
-bool RF24Network::is_direct_child( uint16_t node )
+template<typename RF24>
+bool RF24Network<RF24>::is_direct_child( uint16_t node )
 {
   bool result = false;
 
@@ -352,14 +362,16 @@ bool RF24Network::is_direct_child( uint16_t node )
 
 /******************************************************************/
 
-bool RF24Network::is_descendant( uint16_t node )
+template<typename RF24>
+bool RF24Network<RF24>::is_descendant( uint16_t node )
 {
   return ( node & node_mask ) == node_address;
 }
 
 /******************************************************************/
 
-void RF24Network::setup_address(void)
+template<typename RF24>
+void RF24Network<RF24>::setup_address(void)
 {
   // First, establish the node_mask
   uint16_t node_mask_check = 0xFFFF;
@@ -391,7 +403,8 @@ void RF24Network::setup_address(void)
 
 /******************************************************************/
 
-uint16_t RF24Network::direct_child_route_to( uint16_t node )
+template<typename RF24>
+uint16_t RF24Network<RF24>::direct_child_route_to( uint16_t node )
 {
   // Presumes that this is in fact a child!!
 
@@ -401,7 +414,8 @@ uint16_t RF24Network::direct_child_route_to( uint16_t node )
 
 /******************************************************************/
 
-uint8_t RF24Network::pipe_to_descendant( uint16_t node )
+template<typename RF24>
+uint8_t RF24Network<RF24>::pipe_to_descendant( uint16_t node )
 {
   uint16_t i = node;
   uint16_t m = node_mask;

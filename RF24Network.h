@@ -182,6 +182,8 @@ private:
   uint16_t node_mask; /**< The bits which contain signfificant node address information */
 };
 
+#include "RF24Network.inl"
+
 /**
  * @example helloworld_tx.pde
  *
@@ -347,6 +349,5 @@ private:
  * @li Base node.  The top of the tree node with no parents, only children.  Typically this node
  * will bridge to another kind of network like Ethernet.  ZigBee calls it a Co-ordinator node.
  */
-
 #endif // __RF24NETWORK_H__
 // vim:ai:cin:sts=2 sw=2 ft=cpp

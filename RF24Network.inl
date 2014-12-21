@@ -54,8 +54,10 @@ void RF24Network<RF24>::begin(uint8_t _channel, uint16_t _node_address )
 
   // Open up all listening pipes
   int i = 6;
-  while (i--)
+  while (i--) {
     radio.openReadingPipe(i,pipe_address(_node_address,i));
+    radio.setPayloadSize(i,0);
+  }
   radio.startListening();
 
   // Spew debugging state about the radio
